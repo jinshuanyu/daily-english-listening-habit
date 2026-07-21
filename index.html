@@ -1,0 +1,761 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>英語聽力微習慣承諾卡</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+<!-- PDF 流程：html-to-image（瀏覽器原生點陣化，避免 html2canvas 自行量字造成的中文疊字）+ jsPDF 包成 A4；
+     html2canvas 為備援引擎（部分 iOS/WebView 對 foreignObject 點陣化不穩） -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html-to-image/1.11.11/html-to-image.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<style>
+  :root{
+    --coral:#e8896b;
+    --coral-dark:#d9744f;
+    --peach:#ffe8d9;
+    --cream:#fff8f0;
+    --brown:#5c4a3d;
+    --brown-light:#8a7466;
+    --sage:#a8bfa0;
+    --card-shadow:0 6px 20px rgba(92,74,61,.10);
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{
+    font-family:"Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif;
+    background:var(--cream);
+    color:var(--brown);
+    line-height:1.7;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:520px;margin:0 auto;padding:24px 16px 40px;}
+
+  /* ===== Header ===== */
+  .site-header{text-align:center;padding:8px 0 4px;}
+  .site-header h1{font-size:1.35rem;letter-spacing:.5px;}
+  .site-header .sub{font-size:.95rem;color:var(--coral-dark);font-weight:700;margin-top:6px;}
+
+  /* ===== Screens ===== */
+  .screen{display:none;}
+  .screen.active{display:block;animation:fadeIn .35s ease;}
+  @keyframes fadeIn{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:none;}}
+  .fade-out{animation:fadeOut .2s ease forwards;}
+  @keyframes fadeOut{to{opacity:0;transform:translateY(-8px);}}
+
+  /* ===== Screen 1 ===== */
+  .progress-row{display:flex;align-items:center;gap:12px;margin:20px 0 14px;}
+  .progress-label{font-size:.85rem;color:var(--brown-light);white-space:nowrap;}
+  .progress-track{flex:1;height:8px;background:#f0e2d6;border-radius:99px;overflow:hidden;}
+  .progress-fill{height:100%;width:0;background:var(--coral);border-radius:99px;transition:width .3s ease;}
+
+  .q-card{
+    background:#fff;
+    border-radius:20px;
+    box-shadow:var(--card-shadow);
+    padding:24px 20px;
+  }
+  .q-title{font-size:1.1rem;font-weight:700;margin-bottom:16px;}
+  .opt-btn{
+    display:block;width:100%;
+    background:var(--cream);
+    border:2px solid #f0e2d6;
+    border-radius:14px;
+    padding:13px 16px;
+    margin-bottom:10px;
+    font-size:1rem;
+    color:var(--brown);
+    text-align:left;
+    cursor:pointer;
+    transition:all .15s ease;
+    font-family:inherit;
+  }
+  .opt-btn:hover{border-color:var(--coral);}
+  .opt-btn.picked{background:var(--peach);border-color:var(--coral);font-weight:700;}
+
+  /* ===== Screen 2 ===== */
+  .result-card{
+    background:#fff;border-radius:20px;box-shadow:var(--card-shadow);
+    padding:28px 22px;text-align:center;margin-top:16px;
+  }
+  .result-emoji{font-size:3rem;line-height:1;}
+  .result-title{font-size:1.05rem;color:var(--brown-light);margin-top:12px;}
+  .result-faction{font-size:1.6rem;font-weight:800;color:var(--coral-dark);margin:4px 0 14px;}
+  .result-reason{font-size:.98rem;text-align:left;background:var(--cream);border-radius:14px;padding:14px 16px;}
+  .adjust-block{margin-top:22px;text-align:left;}
+  .adjust-block label{font-size:.9rem;font-weight:700;display:block;margin-bottom:6px;}
+  select,input[type=text]{
+    width:100%;padding:11px 14px;font-size:1rem;font-family:inherit;
+    border:2px solid #f0e2d6;border-radius:12px;background:#fff;color:var(--brown);
+    appearance:auto;
+  }
+  select:focus,input[type=text]:focus{outline:none;border-color:var(--coral);}
+  .pill-row{display:flex;gap:8px;flex-wrap:wrap;}
+  .pill{
+    flex:1;min-width:80px;text-align:center;
+    border:2px solid #f0e2d6;border-radius:99px;
+    padding:9px 6px;font-size:.95rem;cursor:pointer;background:#fff;
+    color:var(--brown);font-family:inherit;transition:all .15s ease;
+  }
+  .pill.picked{background:var(--coral);border-color:var(--coral);color:#fff;font-weight:700;}
+  .cta{
+    display:block;width:100%;margin-top:22px;
+    background:var(--coral);color:#fff;border:none;border-radius:99px;
+    padding:15px;font-size:1.05rem;font-weight:700;cursor:pointer;font-family:inherit;
+    box-shadow:0 4px 12px rgba(217,116,79,.35);
+    transition:background .15s ease;
+  }
+  .cta:hover{background:var(--coral-dark);}
+  .cta:disabled{opacity:.6;cursor:wait;}
+
+  /* ===== Screen 3 ===== */
+  .form-card{
+    background:#fff;border-radius:20px;box-shadow:var(--card-shadow);
+    padding:24px 20px;margin-top:16px;
+  }
+  .field{margin-bottom:20px;}
+  .field-label{font-weight:700;font-size:.98rem;margin-bottom:8px;display:block;}
+  .field-label .hint{font-weight:400;font-size:.85rem;color:var(--brown-light);}
+  .chip-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px;}
+  .chip{
+    border:1.5px solid var(--coral);color:var(--coral-dark);background:#fff;
+    border-radius:99px;padding:6px 14px;font-size:.9rem;cursor:pointer;
+    font-family:inherit;transition:all .15s ease;
+  }
+  .chip.picked{background:var(--coral);color:#fff;}
+  .fixed-text{
+    background:var(--cream);border-radius:12px;padding:11px 14px;font-size:1rem;
+  }
+  .inapp-warning{
+    display:none;
+    background:#fff3cd;border:2px solid #f3d98b;border-radius:14px;
+    padding:14px 16px;font-size:.92rem;margin-bottom:16px;color:#6b5518;
+  }
+  .inapp-warning.show{display:block;}
+  .fallback-dl{
+    display:none;text-align:center;margin-top:16px;
+  }
+  .fallback-dl.show{display:block;animation:fadeIn .3s ease;}
+  #cardPreview{
+    display:block;width:100%;
+    border:2px solid #f0e2d6;border-radius:12px;
+    margin-bottom:6px;
+  }
+  .preview-hint{font-size:.9rem;color:var(--brown);margin-bottom:14px;}
+  .fallback-dl a{
+    display:inline-block;background:var(--sage);color:#fff;text-decoration:none;
+    border-radius:99px;padding:13px 28px;font-size:1rem;font-weight:700;
+    box-shadow:0 4px 12px rgba(168,191,160,.4);
+  }
+  .fallback-dl p{font-size:.85rem;color:var(--brown-light);margin-top:8px;}
+
+  /* ===== A4 PDF card (off-screen) =====
+     注意：隱藏定位必須放在外層 wrapper，#pdfCard 本身要保持 static，
+     否則 html2pdf 複製節點後容器高度為 0，會產出空白 PDF */
+  #pdfCardWrap{position:absolute;left:-10000px;top:0;}
+  #pdfCard{
+    width:794px;height:1122px;overflow:hidden;
+    background:#fff8f0;
+    font-family:"Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif;
+    color:#5c4a3d;
+    display:flex;flex-direction:column;
+    padding:38px 44px 24px;
+  }
+  #pdfCard .p-top{
+    background:#fff;border:3px solid #e8896b;border-radius:24px;
+    padding:26px 34px 22px;
+  }
+  #pdfCard .p-title{font-size:27px;font-weight:800;text-align:center;}
+  #pdfCard .p-subtitle{
+    text-align:center;font-size:17px;color:#d9744f;font-weight:700;margin-top:6px;
+  }
+  #pdfCard .p-lines{margin-top:20px;}
+  #pdfCard .p-line{
+    font-size:17.5px;padding:9px 0;border-bottom:1.5px dashed #f0d9c8;
+    display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;
+  }
+  #pdfCard .p-line:last-child{border-bottom:none;}
+  #pdfCard .p-line b{color:#d9744f;flex-shrink:0;white-space:nowrap;}
+  #pdfCard .p-line .val{border-bottom:2px solid #e8896b;padding:0 6px;font-weight:700;white-space:nowrap;}
+  #pdfCard .p-quote{
+    text-align:center;margin-top:14px;font-size:16px;color:#8a7466;
+    font-style:italic;
+  }
+  #pdfCard .p-bottom{margin-top:22px;display:flex;gap:24px;flex:1;}
+  #pdfCard .p-steps{flex:1;background:#fff;border-radius:20px;padding:22px 26px;}
+  #pdfCard .p-steps h3{font-size:18px;color:#d9744f;margin-bottom:10px;white-space:nowrap;}
+  #pdfCard .p-steps ol{padding-left:22px;font-size:15px;}
+  #pdfCard .p-steps li{margin-bottom:8px;}
+  #pdfCard .p-qr{
+    width:180px;background:#fff;border-radius:20px;padding:18px 14px;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;
+    align-self:stretch;
+  }
+  #pdfCard .p-qr .qr-note{font-size:13.5px;text-align:center;color:#5c4a3d;font-weight:700;}
+  #pdfCard .p-footer{
+    margin-top:auto;padding-top:16px;text-align:center;
+    font-size:12.5px;color:#8a7466;line-height:1.7;
+  }
+  #pdfCard .p-footer .brand{font-weight:700;color:#5c4a3d;}
+
+  /* ===== Site footer (Christina brand) ===== */
+  .site-footer{background:#fff;margin-top:48px;border-top:1px solid #f0e2d6;}
+  .site-footer .inner{max-width:640px;margin:0 auto;padding:24px 16px;text-align:center;}
+  .footer-icons{display:flex;align-items:center;justify-content:center;gap:16px;margin-bottom:12px;}
+  .footer-icons a{color:#5c4a3d;font-size:1.35rem;text-decoration:none;}
+  .footer-icons a:hover{color:var(--coral-dark);}
+  .coffee-btn{
+    display:inline-block;background:linear-gradient(to right,#fbbf24,#f97316);color:#fff;
+    font-weight:500;font-size:1rem;text-align:center;padding:10px 20px;border-radius:9999px;
+    text-decoration:none;box-shadow:0 4px 6px -1px rgba(0,0,0,.1);line-height:1.5;margin:16px 0 8px;
+  }
+  .more-tools-label{text-align:center;margin:10px 0 6px;font-size:.95rem;color:#888;}
+  .more-tools{display:flex;flex-wrap:wrap;justify-content:center;gap:8px;margin:0 auto 10px;padding:0 8px;}
+  .more-tools a{
+    display:inline-block;padding:6px 14px;background:#dbeafe;color:#1d4ed8;
+    text-decoration:none;border-radius:20px;font-size:1.05rem;
+  }
+  .copyright{color:#999;font-size:.85rem;margin-top:8px;}
+
+  @media (min-width:600px){
+    .site-header h1{font-size:1.6rem;}
+  }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header class="site-header">
+    <h1>🎧 輕鬆起步，英語天天聽</h1>
+    <div class="sub">定期定額，投資自己。</div>
+  </header>
+
+  <!-- ============ 畫面 1｜1 分鐘盤點 ============ -->
+  <section id="screen1" class="screen active">
+    <div class="progress-row">
+      <span class="progress-label" id="progressLabel">第 1/5 題</span>
+      <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+    </div>
+    <div class="q-card" id="qCard">
+      <div class="q-title" id="qTitle"></div>
+      <div id="qOptions"></div>
+    </div>
+  </section>
+
+  <!-- ============ 畫面 2｜結果 + 可調整 ============ -->
+  <section id="screen2" class="screen">
+    <div class="result-card">
+      <div class="result-emoji" id="resultEmoji"></div>
+      <div class="result-title" id="resultTitle">你的建議起跑點</div>
+      <div class="result-faction" id="resultFaction"></div>
+      <div class="result-reason" id="resultReason"></div>
+
+      <div class="adjust-block">
+        <label for="factionSelect">我想改成</label>
+        <select id="factionSelect">
+          <option value="A">通勤派 🚗</option>
+          <option value="B">刷牙派 🪥</option>
+          <option value="C">家事派 🧺</option>
+          <option value="D">運動派 🏃</option>
+          <option value="E">睡前派 🌙</option>
+        </select>
+      </div>
+
+      <div class="adjust-block">
+        <label>這樣就算成功：</label>
+        <div class="pill-row" id="durationRow">
+          <button type="button" class="pill" data-dur="60 秒">60 秒</button>
+          <button type="button" class="pill picked" data-dur="2 分鐘">2 分鐘</button>
+          <button type="button" class="pill" data-dur="5 分鐘">5 分鐘</button>
+        </div>
+      </div>
+
+      <button type="button" class="cta" id="toScreen3">下一步：做我的承諾卡 →</button>
+    </div>
+  </section>
+
+  <!-- ============ 畫面 3｜承諾卡生成 ============ -->
+  <section id="screen3" class="screen">
+    <div class="form-card">
+      <div class="inapp-warning" id="inappWarning">
+        📱 你是從 IG 或 FB 開的嗎？<br>
+        點右上角「⋯」→「用瀏覽器開啟」，PDF 才存得下來喔！
+      </div>
+
+      <div class="field">
+        <label class="field-label">📍 每當＿＿＿＿ <span class="hint">（點選或自填）</span></label>
+        <div class="chip-row" id="triggerChips"></div>
+        <input type="text" id="triggerInput" placeholder="例如：戴上耳機出門">
+      </div>
+
+      <div class="field">
+        <label class="field-label">▶️ 我就按播放</label>
+        <div class="fixed-text"><b id="durationEcho">2 分鐘</b></div>
+      </div>
+
+      <div class="field">
+        <label class="field-label">🕐 每天什麼時候？</label>
+        <select id="timeSelect">
+          <option value="早上">早上</option>
+          <option value="中午">中午</option>
+          <option value="下午">下午</option>
+          <option value="晚上">晚上</option>
+          <option value="睡前">睡前</option>
+          <option value="其他">其他（自填）</option>
+        </select>
+        <input type="text" id="timeCustom" placeholder="自填時間，例如：放學回家後" style="display:none;margin-top:8px;">
+      </div>
+
+      <div class="field">
+        <label class="field-label">📌 在哪裡？</label>
+        <input type="text" id="placeInput">
+      </div>
+
+      <div class="field">
+        <label class="field-label">✅ 今天只要做到＿＿＿就算成功</label>
+        <input type="text" id="promiseInput" value="按下播放">
+      </div>
+
+      <div class="field">
+        <label class="field-label">🛟 防失敗 <span class="hint">（依你怕卡關的地方自動帶入，可修改）</span></label>
+        <input type="text" id="failsafeInput">
+      </div>
+
+      <button type="button" class="cta" id="generateBtn">🖨️ 生成我的承諾卡</button>
+
+      <div class="fallback-dl" id="fallbackDl">
+        <img id="cardPreview" alt="承諾卡預覽">
+        <p class="preview-hint">📱 手機：長按上面的圖片，就能直接儲存到相簿</p>
+        <a id="fallbackLink" href="#" target="_blank" rel="noopener">📄 點此下載/開啟 PDF</a>
+        <p>如果沒有自動下載，請點上面這顆按鈕。</p>
+      </div>
+    </div>
+  </section>
+</div>
+
+<!-- ============ A4 PDF 承諾卡（隱藏，供 html2pdf 擷取） ============ -->
+<div id="pdfCardWrap">
+<div id="pdfCard">
+  <div class="p-top">
+    <div class="p-title">我的英語聽力微習慣承諾卡</div>
+    <div class="p-subtitle" id="pdfFaction">餐桌派</div>
+    <div class="p-lines">
+      <div class="p-line"><b>📍 每當</b><span class="val" id="pdfTrigger"></span></div>
+      <div class="p-line"><b>▶️ 就按播放</b><span class="val" id="pdfDuration"></span></div>
+      <div class="p-line"><b>🕐 每天</b><span class="val" id="pdfTime"></span></div>
+      <div class="p-line"><b>📌 在</b><span class="val" id="pdfPlace"></span></div>
+      <div class="p-line"><b>✅ 今天只要</b><span class="val" id="pdfPromise"></span><b>就算成功</b></div>
+      <div class="p-line" id="pdfFailsafeLine"><b>🛟</b><span id="pdfFailsafe"></span></div>
+    </div>
+    <div class="p-quote" id="pdfQuote">「不靠意志力，靠環境設計。」</div>
+  </div>
+
+  <div class="p-bottom">
+    <div class="p-steps">
+      <h3 id="pdfStepsTitle">🍽️ 餐桌派・2 分鐘設定步驟</h3>
+      <ol id="pdfStepsList"></ol>
+    </div>
+    <div class="p-qr">
+      <div id="pdfQrBox"></div>
+      <div class="qr-note">掃碼看推薦片單 🎬</div>
+    </div>
+  </div>
+
+  <div class="p-footer">
+    <span class="brand">媽媽好忙。媽媽好嗎？ ｜ Christina Yu</span><br>
+    facebook.com/mamahowma ・ mamahowma@gmail.com<br>
+    © 2026 Christina Yu. All Rights Reserved.
+  </div>
+</div>
+</div>
+
+<!-- ============ Site Footer ============ -->
+<footer class="site-footer">
+  <div class="inner">
+    <div class="footer-icons">
+      <a href="mailto:mamahowma@gmail.com" aria-label="Email"><i class="fa-solid fa-envelope"></i></a>
+      <a href="https://www.facebook.com/mamahowma" target="_blank" rel="noopener" aria-label="Facebook"><i class="fa-brands fa-facebook"></i></a>
+      <a href="https://portaly.cc/mamahowma/support" target="_blank" rel="noopener" aria-label="Support on Portaly"><i class="fa-solid fa-mug-hot"></i></a>
+    </div>
+    <a class="coffee-btn" href="https://portaly.cc/mamahowma/support" target="_blank" rel="noopener noreferrer">喜歡這個免費工具嗎？ ☕ 請杯咖啡鼓勵我</a>
+    <div class="more-tools-label">🔡 More English Tools:</div>
+    <div class="more-tools">
+      <a href="https://jinshuanyu.github.io/Dolch-List-by-spelling-patterns/">Dolch 高頻詞拼讀</a>
+      <a href="https://jinshuanyu.github.io/vowel-detective/">母音偵探</a>
+      <a href="https://jinshuanyu.github.io/word-mapper/">英文拼字 x 聲音對照</a>
+      <a href="https://jinshuanyu.github.io/grow-a-sentence/">句子擴寫</a>
+      <a href="https://jinshuanyu.github.io/ipa-guide/">IPA 音標指南</a>
+      <a href="https://jinshuanyu.github.io/english-reader/">英語分句朗讀</a>
+    </div>
+    <p class="copyright">© 2026 Christina Yu. All Rights Reserved.</p>
+  </div>
+</footer>
+
+<script>
+/* ================= 資料 ================= */
+const QUESTIONS = [
+  {
+    title:"Q1 你一天中最固定的時段是？",
+    options:{A:"通勤路上",B:"早晚刷牙盥洗",C:"做家事/煮飯時",D:"運動/健走時",E:"睡前上床後"}
+  },
+  {
+    title:"Q2 你什麼時候最能專心聽？",
+    options:{A:"坐車/開車時",B:"盥洗時",C:"手在忙、耳朵有空時",D:"運動時",E:"躺在床上時"}
+  },
+  {
+    title:"Q3 你最希望達成的目標是？",
+    options:{A:"通勤時間不浪費",B:"每天固定、不會漏",C:"邊做事邊聽，輕鬆吸收",D:"讓運動時間加倍值得",E:"睡前放鬆兼學習"}
+  },
+  {
+    title:"Q4 在哪裡播放最方便？",
+    options:{A:"車上/通勤耳機",B:"浴室/洗手台旁",C:"廚房/客廳",D:"運動時戴耳機",E:"床邊",X:"都可以"}
+  },
+  {
+    title:"Q5 你最怕卡關的地方是？",
+    options:{A:"下班太累",B:"忘記播/忘記連線",C:"聽不懂，越聽越挫折",D:"不知道要聽什麼"}
+  }
+];
+
+const FACTIONS = {
+  A:{
+    name:"通勤派", emoji:"🚗", place:"通勤路上",
+    reason:"通勤時間本來就跑不掉，把它變成你的英語時間，一分鐘都不用多花。",
+    triggers:["扣好安全帶","上捷運","戴上耳機出門"],
+    steps:[
+      "車用藍牙設成一上車自動連（或耳機固定放包包同一格）",
+      "音檔清單設成「最近播放」第一個",
+      "口令：「出門 → 按播放」"
+    ]
+  },
+  B:{
+    name:"刷牙派", emoji:"🪥", place:"浴室",
+    reason:"刷牙是每天必定進行的儀式，疊加新習慣就不怕忘記。",
+    triggers:["擠牙膏","打開水龍頭","洗完臉"],
+    steps:[
+      "手機或小喇叭固定放洗手台旁（固定位置）",
+      "音檔捷徑釘首頁",
+      "貼紙口令：「擠牙膏 → 按播放」"
+    ]
+  },
+  C:{
+    name:"家事派", emoji:"🧺", place:"廚房/客廳",
+    reason:"手在忙的時候，耳朵剛好有空。做家事配英語，同一段時間用兩次。",
+    triggers:["進廚房","開始洗碗","拿出摺衣籃"],
+    steps:[
+      "廚房或客廳固定放一台小喇叭",
+      "音檔捷徑釘首頁",
+      "口令貼紙：「開始做家事 → 按播放」"
+    ]
+  },
+  D:{
+    name:"運動派", emoji:"🏃", place:"運動時",
+    reason:"運動的節奏最適合聽：身體在動，大腦更清醒，聽得更進去。",
+    triggers:["穿上運動鞋","踏上跑步機","開始熱身"],
+    steps:[
+      "耳機固定放在運動包或鞋櫃旁",
+      "音檔清單設成「最近播放」第一個",
+      "口令：「穿上運動鞋 → 按播放」"
+    ]
+  },
+  E:{
+    name:"睡前派", emoji:"🌙", place:"床邊",
+    reason:"睡前躺上床，是一天最安靜的時刻。聽著聽著放鬆入睡，英語順便進來。",
+    triggers:["躺上床","關大燈","設好鬧鐘"],
+    steps:[
+      "床頭固定放手機或小喇叭",
+      "選有「定時關閉」的播放方式（睡著就自動停）",
+      "口令貼紙：「關燈 → 按播放」"
+    ]
+  }
+};
+
+/* Q5 → 防失敗句（不計分，客製承諾卡） */
+const FAILSAFE = {
+  A:"太累的話，只播 60 秒也算成功",
+  B:"怕忘記的話，把播放捷徑釘在手機首頁第一格",
+  C:"聽不懂也沒關係，這階段先讓耳朵習慣英語的聲音就算成功",
+  D:"不知道聽什麼，就掃卡片上的 QR 打開現成片單"
+};
+
+const QUOTES = ["「不靠意志力，靠環境設計。」","「只聽 60 秒，也算成功。」"];
+const QR_URL = "https://jinshuanyu.github.io/englishplaylistsforkids/";
+
+/* ================= 狀態 ================= */
+let answers = [];        // Q1–Q5 的選項，例如 ["A","C","B","A","D"]
+let currentQ = 0;
+let recommended = "A";   // 測驗結果（Q1–Q4 計分）
+let chosenFaction = "A"; // 使用者最終選擇（可改）
+let duration = "2 分鐘";
+let lastPdfUrl = null;
+
+/* ================= 畫面 1：測驗 ================= */
+const qTitle = document.getElementById("qTitle");
+const qOptions = document.getElementById("qOptions");
+const qCard = document.getElementById("qCard");
+const progressLabel = document.getElementById("progressLabel");
+const progressFill = document.getElementById("progressFill");
+
+function renderQuestion(){
+  const q = QUESTIONS[currentQ];
+  progressLabel.textContent = `第 ${currentQ+1}/5 題`;
+  progressFill.style.width = `${(currentQ)/5*100}%`;
+  qTitle.textContent = q.title;
+  qOptions.innerHTML = "";
+  for(const key of Object.keys(q.options)){
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "opt-btn";
+    btn.textContent = q.options[key];
+    btn.addEventListener("click", () => pickAnswer(key, btn));
+    qOptions.appendChild(btn);
+  }
+}
+
+function pickAnswer(key, btn){
+  if(qCard.classList.contains("fade-out")) return; // 防連點
+  btn.classList.add("picked");
+  answers[currentQ] = key;
+  setTimeout(() => {
+    if(currentQ < 4){
+      qCard.classList.add("fade-out");
+      setTimeout(() => {
+        currentQ++;
+        qCard.classList.remove("fade-out");
+        renderQuestion();
+      }, 200);
+    } else {
+      progressFill.style.width = "100%";
+      computeResult();
+      showScreen("screen2");
+    }
+  }, 300);
+}
+
+/* Q1–Q4 計分（Q4 選「都可以」= X 不計分）；平手 → 平手派中取 Q1 → 再取 Q4 → 固定序（刷牙>睡前>通勤>家事>運動） */
+function computeResult(){
+  const count = {A:0,B:0,C:0,D:0,E:0};
+  answers.slice(0,4).forEach(a => { if(count[a] !== undefined) count[a]++; });
+  const max = Math.max(...Object.values(count));
+  const winners = Object.keys(count).filter(k => count[k] === max);
+  if(winners.length === 1){
+    recommended = winners[0];
+  } else if(winners.includes(answers[0])){
+    recommended = answers[0];
+  } else if(winners.includes(answers[3])){
+    recommended = answers[3];
+  } else {
+    recommended = ["B","E","A","C","D"].find(k => winners.includes(k));
+  }
+  chosenFaction = recommended;
+  document.getElementById("factionSelect").value = recommended;
+  renderFactionResult();
+}
+
+/* 依目前選擇的派別更新結果區；使用者改派別時描述要跟著換 */
+function renderFactionResult(){
+  const f = FACTIONS[chosenFaction];
+  document.getElementById("resultEmoji").textContent = f.emoji;
+  document.getElementById("resultFaction").textContent = f.name;
+  document.getElementById("resultReason").textContent = f.reason;
+  document.getElementById("resultTitle").textContent =
+    chosenFaction === recommended ? "你的建議起跑點" : "你選擇的起跑點";
+}
+
+/* ================= 畫面切換 ================= */
+function showScreen(id){
+  document.querySelectorAll(".screen").forEach(s => s.classList.remove("active"));
+  document.getElementById(id).classList.add("active");
+  window.scrollTo({top:0, behavior:"smooth"});
+}
+
+/* ================= 畫面 2 ================= */
+document.getElementById("factionSelect").addEventListener("change", e => {
+  chosenFaction = e.target.value;
+  renderFactionResult();
+});
+
+document.querySelectorAll("#durationRow .pill").forEach(p => {
+  p.addEventListener("click", () => {
+    document.querySelectorAll("#durationRow .pill").forEach(x => x.classList.remove("picked"));
+    p.classList.add("picked");
+    duration = p.dataset.dur;
+  });
+});
+
+document.getElementById("toScreen3").addEventListener("click", () => {
+  setupScreen3();
+  showScreen("screen3");
+});
+
+/* ================= 畫面 3 ================= */
+const triggerChips = document.getElementById("triggerChips");
+const triggerInput = document.getElementById("triggerInput");
+const timeSelect = document.getElementById("timeSelect");
+const timeCustom = document.getElementById("timeCustom");
+
+function setupScreen3(){
+  const f = FACTIONS[chosenFaction];
+  // 觸發片語按鈕（依派別）
+  triggerChips.innerHTML = "";
+  f.triggers.forEach(t => {
+    const chip = document.createElement("button");
+    chip.type = "button";
+    chip.className = "chip";
+    chip.textContent = t;
+    chip.addEventListener("click", () => {
+      triggerInput.value = t;
+      triggerChips.querySelectorAll(".chip").forEach(c => c.classList.remove("picked"));
+      chip.classList.add("picked");
+    });
+    triggerChips.appendChild(chip);
+  });
+  triggerInput.value = "";
+  document.getElementById("durationEcho").textContent = duration;
+  document.getElementById("placeInput").value = f.place;
+  document.getElementById("failsafeInput").value = FAILSAFE[answers[4]] || FAILSAFE.A;
+}
+
+triggerInput.addEventListener("input", () => {
+  triggerChips.querySelectorAll(".chip").forEach(c => {
+    c.classList.toggle("picked", c.textContent === triggerInput.value);
+  });
+});
+
+timeSelect.addEventListener("change", () => {
+  timeCustom.style.display = timeSelect.value === "其他" ? "block" : "none";
+});
+
+/* ================= in-app browser 偵測 ================= */
+function isInAppBrowser(){
+  const ua = navigator.userAgent || "";
+  return /Instagram|FBAN|FBAV|FB_IAB|FBIOS|Line\//i.test(ua);
+}
+if(isInAppBrowser()){
+  document.getElementById("inappWarning").classList.add("show");
+}
+
+/* ================= QR code（載入時先生成，供 PDF 擷取） ================= */
+new QRCode(document.getElementById("pdfQrBox"), {
+  text: QR_URL,
+  width: 120,
+  height: 120,
+  correctLevel: QRCode.CorrectLevel.M
+});
+
+/* ================= PDF 生成 ================= */
+const generateBtn = document.getElementById("generateBtn");
+
+function fillPdfCard(){
+  const f = FACTIONS[chosenFaction];
+  document.getElementById("pdfFaction").textContent = `${f.emoji} ${f.name}`;
+  document.getElementById("pdfTrigger").textContent = triggerInput.value.trim() || "＿＿＿＿";
+  document.getElementById("pdfDuration").textContent = duration;
+  const t = timeSelect.value === "其他"
+    ? (timeCustom.value.trim() || "＿＿＿＿")
+    : timeSelect.value;
+  document.getElementById("pdfTime").textContent = t;
+  document.getElementById("pdfPlace").textContent = document.getElementById("placeInput").value.trim() || f.place;
+  document.getElementById("pdfPromise").textContent = document.getElementById("promiseInput").value.trim() || "按下播放";
+
+  const failsafe = document.getElementById("failsafeInput").value.trim();
+  document.getElementById("pdfFailsafe").textContent = failsafe;
+  document.getElementById("pdfFailsafeLine").style.display = failsafe ? "flex" : "none";
+
+  // 金句：防失敗句已含「60 秒」時固定用母句，避免同張卡重複
+  const quote = failsafe.includes("60 秒")
+    ? QUOTES[0]
+    : QUOTES[Math.floor(Math.random()*QUOTES.length)];
+  document.getElementById("pdfQuote").textContent = quote;
+
+  document.getElementById("pdfStepsTitle").textContent = `${f.emoji} ${f.name}・2 分鐘設定步驟`;
+  const ol = document.getElementById("pdfStepsList");
+  ol.innerHTML = "";
+  f.steps.forEach(s => {
+    const li = document.createElement("li");
+    li.textContent = s;
+    ol.appendChild(li);
+  });
+}
+
+/* 抽樣檢查 canvas 是否有實際內容（顏色種類 > 4），空白或壞掉回傳 false */
+function canvasHasContent(cv){
+  if(!cv || !cv.width || !cv.height) return false;
+  try{
+    const d = cv.getContext("2d").getImageData(0, 0, cv.width, cv.height).data;
+    const colors = new Set();
+    for(let i = 0; i < d.length; i += 8011){
+      colors.add((d[i]>>4)+","+(d[i+1]>>4)+","+(d[i+2]>>4));
+      if(colors.size > 4) return true;
+    }
+  }catch(e){}
+  return false;
+}
+
+/* 主引擎：html-to-image（瀏覽器原生點陣化，中文最準）。skipFonts：卡片只用系統
+   字型，跳過網路字型可避免 FontAwesome 跨網域錯誤。連續呼叫兩次是 Safari/iOS
+   WebView 的已知 workaround（第一次圖片可能沒載入）。
+   備援引擎：html2canvas（部分 iOS/WebView 對 foreignObject 不穩時接手；
+   scrollX/scrollY 鎖 0 避免頁面捲動造成內容偏移）。 */
+async function renderCardCanvas(){
+  const node = document.getElementById("pdfCard");
+  const opts = {pixelRatio:2, backgroundColor:"#fff8f0", skipFonts:true, width:794, height:1122};
+  let canvas = null;
+  try{
+    await htmlToImage.toCanvas(node, opts);
+    canvas = await htmlToImage.toCanvas(node, opts);
+  }catch(e){ canvas = null; }
+  if(!canvasHasContent(canvas)){
+    canvas = await html2canvas(node, {scale:2, backgroundColor:"#fff8f0", useCORS:true, scrollX:0, scrollY:0});
+  }
+  return canvas;
+}
+
+generateBtn.addEventListener("click", async () => {
+  fillPdfCard();
+  generateBtn.disabled = true;
+  generateBtn.textContent = "生成中，請稍候…";
+  const f = FACTIONS[chosenFaction];
+  const filename = `英語聽力承諾卡-${f.name}.pdf`;
+  try{
+    const canvas = await renderCardCanvas();
+    const jpeg = canvas.toDataURL("image/jpeg", 0.92);
+
+    // 圖片預覽：手機（含 IG/FB in-app browser）長按即可存相簿，不依賴下載功能
+    document.getElementById("cardPreview").src = jpeg;
+
+    const pdf = new window.jspdf.jsPDF({unit:"mm", format:"a4", orientation:"portrait"});
+    pdf.addImage(jpeg, "JPEG", 0, 0, 210, 297);
+    const blob = pdf.output("blob");
+    if(lastPdfUrl) URL.revokeObjectURL(lastPdfUrl);
+    lastPdfUrl = URL.createObjectURL(blob);
+
+    // 備援按鈕（一律顯示）
+    const link = document.getElementById("fallbackLink");
+    link.href = lastPdfUrl;
+    link.setAttribute("download", filename);
+    document.getElementById("fallbackDl").classList.add("show");
+
+    // 非 in-app browser 才嘗試自動下載
+    if(!isInAppBrowser()){
+      const a = document.createElement("a");
+      a.href = lastPdfUrl;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+    }
+  }catch(err){
+    alert("PDF 生成失敗，請重試一次。若在 IG/FB 內開啟，請改用瀏覽器開啟本頁。\n（錯誤訊息：" + (err && err.message ? err.message : err) + "）");
+    console.error(err);
+  }finally{
+    generateBtn.disabled = false;
+    generateBtn.textContent = "🖨️ 生成我的承諾卡";
+  }
+});
+
+/* ================= 啟動 ================= */
+renderQuestion();
+</script>
+</body>
+</html>
